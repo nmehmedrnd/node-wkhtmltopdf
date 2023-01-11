@@ -174,8 +174,15 @@ function wkhtmltopdf(input, options, callback) {
     }
     clearTimeout(timeout);
     if(spawnOptions.detached) {
-      // this is the way closing child process and his children, when is spawned detached
-      process.kill(-child.pid);
+      try {
+        // this is the way closing child process and his children, when is spawned detached
+        process.kill(-child.pid);
+      } catch (e) {
+        if (e.code !== 'ESRCH') {
+          // child process was found, but not killed successfully
+          throw e;
+        }
+      }
     } else {
       child.removeAllListeners('exit');
       child.kill();
