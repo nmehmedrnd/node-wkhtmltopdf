@@ -151,23 +151,42 @@ function wkhtmltopdf(input, options, callback) {
   var stderrMessages = [];
   function handleError(err) {
     var errObj = null;
-    // check ignore warnings array before killing child
-    if (options.ignore && options.ignore instanceof Array) {
-      var ignoreError = false;
-      options.ignore.forEach(function(opt) {
-        err.forEach(function(error) {
-          if (typeof opt === 'string' && opt === error) {
+    if (Array.isArray(err)) {
+      // check ignore warnings array before killing child
+      if (options.ignore && options.ignore instanceof Array) {
+        var ignoreError = false;
+        options.ignore.forEach(function(opt) {
+          err.forEach(function(error) {
+            if (typeof opt === 'string' && opt === error) {
+              ignoreError = true;
+            }
+            if (opt instanceof RegExp && error.match(opt)) {
+              ignoreError = true;
+            }
+          });
+        });
+        if (ignoreError) {
+          return true;
+        }
+      }
+      errObj = new Error(err.join('\n'));
+    } else if (err instanceof Error) {
+      var message = err.message;
+      if (options.ignore && options.ignore instanceof Array) {
+        var ignoreError = false;
+        options.ignore.forEach(function(opt) {
+          if (typeof opt === 'string' && opt === message) {
             ignoreError = true;
           }
-          if (opt instanceof RegExp && error.match(opt)) {
+          if (opt instanceof RegExp && message.match(opt)) {
             ignoreError = true;
           }
         });
-      });
-      if (ignoreError) {
-        return true;
+        if (ignoreError) {
+          return true;
+        }
+        errObj = err;
       }
-      errObj = new Error(err.join('\n'));
     } else if (err) {
       errObj =  new Error(err);
     }
